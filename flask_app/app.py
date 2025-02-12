@@ -1,6 +1,6 @@
 
 import os
-from flask import Flask, render_template, redirect, url_for, request, flash
+from flask import Flask,render_template_string, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_required, logout_user, login_user, current_user
 from auth import authenticate_user, register_user
 from flask_migrate import Migrate
@@ -19,6 +19,11 @@ TEMPLATES_FOLDER = os.path.join(base_path, 'templates')
 STATIC_FOLDER = os.path.join(base_path, 'static')
 print('TEMPLATES_FOLDER:', TEMPLATES_FOLDER)
 print('STATIC_FOLDER:', STATIC_FOLDER)
+
+INDEX_TEMPLATE_PATH = os.path.join(TEMPLATES_FOLDER, 'index.html')
+REGISTER_TEMPLATE_PATH = os.path.join(TEMPLATES_FOLDER, 'register.html')
+LOGIN_TEMPLATE_PATH = os.path.join(TEMPLATES_FOLDER, 'login.html')
+STOCK_TEMPLATE_PATH = os.path.join(TEMPLATES_FOLDER, 'stock.html')
 
 # ================== 初始化区域 ==================
 # Initialize Flask app with template and static folder paths
@@ -53,7 +58,9 @@ def create_tables():
 # Root route
 @app.route('/')
 def home():
-    return render_template('index.html')  
+    with open(INDEX_TEMPLATE_PATH, 'r') as file:
+        html_content = file.read()
+    return render_template_string(html_content)
 
 # Register page route
 @app.route('/register', methods=['GET', 'POST'])
@@ -77,7 +84,9 @@ def register():
             flash('User already exists.', 'danger')
             return redirect(url_for('register'))
 
-    return render_template('register.html')
+    with open(REGISTER_TEMPLATE_PATH, 'r') as file:
+        html_content = file.read()
+    return render_template_string(html_content)
 
 # Login page route
 @app.route('/login', methods=['GET', 'POST'])
@@ -92,7 +101,9 @@ def login():
             return redirect(url_for('dashboard'))
         else:
             flash('Invalid username or password', 'danger')  # Flash error message
-    return render_template('login.html')
+    with open(LOGIN_TEMPLATE_PATH, 'r') as file:
+        html_content = file.read()
+    return render_template_string(html_content)
 
 # Logout route
 @app.route('/logout')
@@ -111,7 +122,10 @@ def dashboard():
 @app.route('/stock')
 @login_required
 def stock():
-    return render_template('stock.html', username=current_user.username)
+    with open(STOCK_TEMPLATE_PATH, 'r') as file:
+        html_content = file.read()
+    return render_template_string(html_content, username=current_user.username)
+    # return render_template('stock.html', username=current_user.username)
 
 @app.route('/stock_data')
 @login_required

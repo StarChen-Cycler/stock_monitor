@@ -2,9 +2,10 @@ def process_stock_data(df):
     x_data = df['date'].tolist()
 
     # Convert numerical columns to float
-    df.loc[:, ['open', 'close', 'low', 'high']] = df[['open', 'close', 'low', 'high']].astype(float)
+    df = df.copy()  # Explicitly create a copy
+    df[['open', 'close', 'low', 'high']] = df[['open', 'close', 'low', 'high']].astype(float)
     candle_data = df[['open', 'close', 'low', 'high']].values.tolist()
-
+    # print("Candle Data:", candle_data)
     close_prices = df['close'].astype(float).tolist()
 
     # Calculate Moving Averages (replace -1 with None for ECharts compatibility)
@@ -41,3 +42,4 @@ def calculate_ma(period, data):
         else:
             ma.append(-1)
     return ma
+

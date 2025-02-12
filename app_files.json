@@ -12,6 +12,7 @@
     "flask_app/static/css/index.css",
     "flask_app/static/css/login.css",
     "flask_app/static/css/register.css",
+    "flask_app/static/css/stock.css",
     "flask_app/static/js/chart_utils.js",
     "flask_app/templates/dashboard.html",
     "flask_app/templates/index.html",
