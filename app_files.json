@@ -5,12 +5,18 @@
     "flask_app/config.py",
     "flask_app/models.py",
     "flask_app/requirements.txt",
+    "flask_app/data_loader/data_loader.py",
+    "flask_app/data_loader/data_processor.py",
+    "flask_app/data_loader/__init__.py",
+    "flask_app/static/css/dashboard.css",
     "flask_app/static/css/global.css",
     "flask_app/static/css/index.css",
     "flask_app/static/css/login.css",
     "flask_app/static/css/register.css",
+    "flask_app/static/js/chart_utils.js",
     "flask_app/templates/dashboard.html",
     "flask_app/templates/index.html",
     "flask_app/templates/login.html",
-    "flask_app/templates/register.html"
+    "flask_app/templates/register.html",
+    "flask_app/templates/stock.html"
 ]

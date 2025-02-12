@@ -6,6 +6,9 @@ from auth import authenticate_user, register_user
 from flask_migrate import Migrate
 from models import db, User, init_db
 from config import Config
+from flask import jsonify
+from data_loader.data_loader import load_parquet
+from data_loader.data_processor import process_stock_data
 
 # ================== 配置区域 ==================
 # Define the base path of the app
@@ -28,6 +31,10 @@ db.init_app(app)
 
 # Initialize Flask-Migrate
 migrate = Migrate(app, db)
+
+# Load Parquet file at app startup
+parquet_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'merged_data.parquet'))
+df = load_parquet(parquet_file_path)
 
 # Initialize LoginManager
 login_manager = LoginManager()
@@ -99,6 +106,26 @@ def logout():
 @login_required
 def dashboard():
     return render_template('dashboard.html', username=current_user.username)
+
+# Add a new route for the stock page
+@app.route('/stock')
+@login_required
+def stock():
+    return render_template('stock.html', username=current_user.username)
+
+@app.route('/stock_data')
+@login_required
+def stock_data():
+    ts_code = request.args.get('ts_code')
+    if not ts_code:
+        return jsonify({'error': 'Missing ts_code parameter'}), 400
+
+    stock_data = df[df['ts_code'] == ts_code]
+    if stock_data.empty:
+        return jsonify({'error': 'No data found for this ts_code'}), 404
+
+    chart_data = process_stock_data(stock_data)
+    return jsonify(chart_data)
 
 if __name__ == '__main__':
     app.run(debug=True)

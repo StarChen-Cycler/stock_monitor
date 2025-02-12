@@ -23,7 +23,8 @@ body {
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     padding: 30px;
     width: 100%;
-    max-width: 600px;
+    max-width: none;
+    min-width: 300px;
     text-align: center;
     border: 2px solid rgba(255, 255, 255, 0.3);
     backdrop-filter: blur(10px);
@@ -103,4 +104,21 @@ h1, h2 {
     margin-top: 10px;
     font-size: 14px;
     color: red;
+}
+
+.interaction-panel {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.btn-sm {
+    width: auto;
+    padding: 5px 10px;
+    margin: 5px;
+}
+
+.chart-container {
+    /* width: 100%; */
+    height: 400px;
+    margin-top: 20px;
 }

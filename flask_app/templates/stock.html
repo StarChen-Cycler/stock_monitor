@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stock Analytics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.1/dist/echarts.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/chart_utils.js') }}"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>Stock Analyzer</h2>
+        <div class="input-group">
+            <label for="stockInput">Stock Code</label>
+            <input type="text" id="stockInput" name="stockInput" placeholder="Enter ts_code" class="form-control">
+            <button onclick="searchStock()" class="btn">Search</button>
+        </div>
+        <div id="stockChart" class="chart-container"></div>
+        <div class="interaction-panel">
+            <button onclick="zoomIn()" class="btn btn-sm">Zoom In</button>
+            <button onclick="zoomOut()" class="btn btn-sm">Zoom Out</button>
+            <button onclick="resetChart()" class="btn btn-sm">Reset View</button>
+        </div>
+    </div>
+</body>
+</html>

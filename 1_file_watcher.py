@@ -16,9 +16,13 @@ app_files_json = os.path.join(PROJECT_ROOT, "app_files.json")
 
 # List of directories or files to exclude from tracking
 EXCLUDED = [
-    os.path.join(APP_FOLDER_NAME, "migrations"),  # Exclude the migrations folder
-    os.path.join(APP_FOLDER_NAME, "__pycache__"), # Exclude Python cache files
-    os.path.join(APP_FOLDER_NAME, "site.db"),     # Exclude the SQLite database
+    f"{APP_FOLDER_NAME}/migrations",
+    f"{APP_FOLDER_NAME}/__pycache__",
+    f"{APP_FOLDER_NAME}/site.db",
+    f"{APP_FOLDER_NAME}/data_loader/__pycache__",
+    # os.path.join(APP_FOLDER_NAME, "migrations"),  # Exclude the migrations folder
+    # os.path.join(APP_FOLDER_NAME, "__pycache__"), # Exclude Python cache files
+    # os.path.join(APP_FOLDER_NAME, "site.db"),     # Exclude the SQLite database
 ]
 
 # Function to read the app files from app_files.json
