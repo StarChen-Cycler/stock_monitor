@@ -8,7 +8,7 @@ from models import db, User, init_db
 from config import Config
 from flask import jsonify
 from data_loader.data_loader import load_parquet
-from data_loader.data_processor import process_stock_data
+from data_loader.data_processor import process_main_stock_data, process_strategy_data
 
 # ================== 配置区域 ==================
 # Define the base path of the app
@@ -127,19 +127,44 @@ def stock():
     return render_template_string(html_content, username=current_user.username)
     # return render_template('stock.html', username=current_user.username)
 
-@app.route('/stock_data')
+@app.route('/stock_data', methods=['GET', 'POST'])
 @login_required
 def stock_data():
-    ts_code = request.args.get('ts_code')
-    if not ts_code:
-        return jsonify({'error': 'Missing ts_code parameter'}), 400
+    if request.method == 'POST':
+        request_data = request.json
+        ts_code = request_data.get('ts_code')
+        strategies = request_data.get('strategies', [])
+    else:
+        ts_code = request.args.get('ts_code')
+        strategies = []
 
+    if not strategies:
+        strategies = [{'name': 'rsi', 'params': {'period': 10}}]
+    
+    if not ts_code:
+        return jsonify({'error': 'Missing ts_code'}), 400
+    
     stock_data = df[df['ts_code'] == ts_code]
     if stock_data.empty:
-        return jsonify({'error': 'No data found for this ts_code'}), 404
+        return jsonify({'error': 'No data found'}), 404
+    
+    # Process main stock data
+    main_data = process_main_stock_data(stock_data)
+    
+    # Process strategies
+    strategy_results = process_strategy_data(stock_data, strategies)
 
-    chart_data = process_stock_data(stock_data)
-    return jsonify(chart_data)
+    
+    # Combine results
+    response = {
+        'main': main_data,
+        'strategies': strategy_results
+    }
+
+    # print('main_length:', main_data)
+    # print('strategy_results_length:', strategy_results)
+    
+    return jsonify(response)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

@@ -1,15 +1,18 @@
 let chart = null;
+let subcharts = [];
+
+$(document).ready(function() {
+    let fetchedData = null; // Declare a variable to hold the fetched data
+    searchStock(fetchedData);
+});
 
 function searchStock() {
+    console.log("searchStock() called");
     var tsCode = $('#stockInput').val().trim();
     if (!tsCode) {
         alert('Please enter a valid stock code');
+        console.log("No stock code entered.");
         return;
-    }
-
-    // Clear previous chart
-    if (chart) {
-        chart.dispose();
     }
 
     // Fetch data and build chart
@@ -19,32 +22,164 @@ function searchStock() {
         data: { ts_code: tsCode },
         dataType: 'json',
         success: function(data) {
+            console.log("Data received:", data);
             if (data.error) {
                 alert(data.error);
+                console.log("Error in data:", data.error);
                 return;
             }
-            buildChart(data);
+            fetchedData = data;
+            buildChart(data.main, data.strategies);
         },
         error: function(xhr, status, error) {
             alert('Error retrieving stock data');
+            console.log("AJAX error:", error);
         }
     });
 }
 
-function buildChart(data) {
+// Helper function to create initial configuration for charts and also for updating the chart
+function setChartParams(subchartCount, mainData) {
+    // Fixed pixel values for positioning and grid heights
+    const chartHeight = 1200;  // Height of the chart container
+    const mainChartHeight = 500;  // Main chart height (candlestick)
+    const subchartHeight = 150;  // Each subchart (RSI, Volume) height
+    const startPoint = 90;
+    const endPoint = 100;
+    // Calculate the bottom position for dataZoom to be below the last grid
+    const totalHeight = mainChartHeight + (subchartCount * (subchartHeight + 5)); // Total height of all grids
+    const dataZoomBottom = totalHeight + 80; // Adding some space between the last grid and dataZoom
+
+    // Set grid configuration for all charts
+    let gridConfig = [
+        {
+            left: 50,
+            right: 50,
+            top: 50, // Slightly under the legend
+            height: mainChartHeight, // Height of the main chart
+
+        }
+    ];
+
+    let legendConfig = [
+        {
+            data: ['Candlestick', 'MA5', 'MA10', 'MA20', 'RSI', 'Volume'],
+            top: 10, // Positioning legend slightly near the top
+            left: 'center'
+        }
+    ];
+
+    let xAxisConfig = [
+        {
+            type: 'category',
+            data: mainData.x_data,
+            scale: true,
+            boundaryGap: false,
+            axisLine: { onZero: false }
+        },
+    ];
+
+    let yAxisConfig = [
+        {
+            scale: true,
+            splitArea: { show: true }
+        }
+    ];
+
+    let dataZoomConfig = [
+        {
+            type: 'slider',
+            show: true,
+            xAxisIndex: [0],
+            filterMode: 'filter',
+            height: 30,
+            top: dataZoomBottom, // Dynamically set the bottom position
+            handleSize: '80%',
+            handleStyle: { color: '#d3dee5' },
+            backgroundStyle: { color: '#f8fcff' },
+            dataBackground: { lineStyle: { color: '#5793f3' }, areaStyle: { color: '#e3f6ff' } },
+            start: startPoint,
+            end: endPoint
+        },
+        {
+            type: 'inside',
+            xAxisIndex: [0, 1],
+            start: startPoint,
+            end: endPoint
+            
+        }
+    ];
+
+    // Dynamically add subcharts based on subchartCount
+    let subchartTop = mainChartHeight + 60;  // Subchart positions (starting below the main chart)
+    for (let i = 0; i < subchartCount; i++) {
+        let gridIndex = i + 1;
+        gridConfig.push({
+            left: 50,
+            right: 50,
+            top: subchartTop + (i * (subchartHeight)) + 10, // Stack subcharts vertically
+            height: subchartHeight,
+        });
+
+        // Add new x and y axes for each subchart
+        xAxisConfig.push({
+            type: 'category',
+            gridIndex: gridIndex,
+            data: mainData.x_data,
+            boundaryGap: false,
+            axisLine: { onZero: false },
+            axisTick: { show: false },
+            splitLine: { show: false },
+            axisLabel: { show: false },
+            min: 'dataMin',
+            max: 'dataMax'
+        });
+
+        yAxisConfig.push({
+            scale: true,
+            gridIndex: gridIndex,
+            splitNumber: 2,
+            axisLabel: { show: false },
+            axisLine: { show: false },
+            axisTick: { show: false },
+            splitLine: { show: true }
+        });
+    }
+
+    
+    
+    return { gridConfig, legendConfig, xAxisConfig, yAxisConfig, dataZoomConfig};
+}
+
+function buildChart(mainData, strategiesData) {
+    console.log("Building chart...");
+
+    // Initialize the main chart
+    if (chart) {
+        console.log("Disposing of existing chart before reinitializing.");
+        chart.dispose();
+    }
+
     chart = echarts.init(document.getElementById('stockChart'));
-    console.log(data);
+    console.log("Main chart initialized.");
+
+    // Get chart configurations dynamically
+    const subchartCount = parseInt($('#subchartCount').val());
+    console.log("Subchart count:", subchartCount);
+
+    const { gridConfig, legendConfig, xAxisConfig, yAxisConfig,dataZoomConfig} = setChartParams(subchartCount, mainData);
+
     const options = {
+        animation: false,
         title: {
             text: 'Stock Candlestick Chart',
-            top: '0%', // Move the title up by adjusting the top property
-            left: 'left' // Center the title horizontally
+            top: '0%',
+            left: 'left'
         },
         tooltip: {
             trigger: 'axis',
             axisPointer: {
                 type: 'cross',
-                // type: 'line',
                 snap: true,
                 crossStyle: { color: '#ffffff' }
             },
@@ -55,7 +190,7 @@ function buildChart(data) {
                 params.forEach(param => {
                     if (param.seriesType === 'candlestick') {
                         const [num, open, close, low, high] = param.value;
-                        tooltip += `Candlestick: Open=${open.toFixed(2)}\nClose=${close.toFixed(2)}\nLow=${low.toFixed(2)}\nHigh=${high.toFixed(2)}<br>`;
+                        tooltip += `Open=${open.toFixed(2)}<br>Close=${close.toFixed(2)}<br>Low=${low.toFixed(2)}<br>High=${high.toFixed(2)}<br>`;
                     } else {
                         tooltip += `${param.seriesName}: ${param.value.toFixed(2)}<br>`;
                     }
@@ -63,46 +198,23 @@ function buildChart(data) {
                 return tooltip;
             }
         },
-        legend: {
-            data: ['Candlestick', 'MA5', 'MA10', 'MA20'],
-            top: '5%' // Move the legend up by adjusting the top property
+        axisPointer: {
+            link: [
+                { xAxisIndex: 'all' }
+            ],
+            label: {
+                backgroundColor: '#777'
+            }
         },
-        grid: {
-            left: '8%',
-            right: '8%',
-            bottom: '20%'
-        },
-        xAxis: [{
-            type: 'category',
-            data: data.x_data,
-            scale: true,
-            boundaryGap: false,
-            axisLine: { onZero: false }
-        }],
-        yAxis: [{
-            scale: true,
-            splitArea: { show: true }
-        }],
-        dataZoom: [{
-            type: 'slider',
-            show: true,
-            xAxisIndex: [0],
-            filterMode: 'filter',
-            height: 30,
-            bottom: '10%',
-            handleIcon: 'M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9zM13.8,24.4H6.2V23h7.6V24.4zM13.8,19.6H6.2v-1.4h7.6V19.6z',
-            handleSize: '80%',
-            handleStyle: { color: '#d3dee5' },
-            backgroundStyle: { color: '#f8fcff' },
-            dataBackground: { lineStyle: { color: '#5793f3' }, areaStyle: { color: '#e3f6ff' } }
-        }, {
-            type: 'inside',
-            xAxisIndex: [0]
-        }],
+        legend: legendConfig[0], // Dynamically set legend configuration
+        grid: gridConfig, // Dynamically set grid configuration
+        xAxis: xAxisConfig, // Dynamically set xAxis configuration
+        yAxis: yAxisConfig, // Dynamically set yAxis configuration
+        dataZoom: dataZoomConfig, // Dynamically set dataZoom configuration
         series: [{
             name: 'Candlestick',
             type: 'candlestick',
-            data: data.candle_data,
+            data: mainData.candle_data,
             itemStyle: {
                 color: '#00da3c',
                 color0: '#ec0000',
@@ -116,7 +228,7 @@ function buildChart(data) {
     const maSeries = [{
         name: 'MA5',
         type: 'line',
-        data: data.ma5,
+        data: mainData.ma5,
         smooth: true,
         lineStyle: { width: 1 },
         itemStyle: { color: '#ff4500' },
@@ -124,7 +236,7 @@ function buildChart(data) {
     }, {
         name: 'MA10',
         type: 'line',
-        data: data.ma10,
+        data: mainData.ma10,
         smooth: true,
         lineStyle: { width: 1 },
         itemStyle: { color: '#06a7a0' },
@@ -132,58 +244,88 @@ function buildChart(data) {
     }, {
         name: 'MA20',
         type: 'line',
-        data: data.ma20,
+        data: mainData.ma20,
         smooth: true,
         lineStyle: { width: 1 },
         itemStyle: { color: '#3c763d' },
         showSymbol: false
     }];
 
-    // Add MA lines to series
     options.series.push(...maSeries);
 
     // Add MarkPoints
     options.series[0].markPoint = {
         label: {
-                    formatter: (param) => Math.round(param.value) || 0,
-                    color: '#000000' 
-                },
+            formatter: (param) => Math.round(param.value) || 0,
+            color: '#000000'
+        },
         data: [{
             name: '最高',
             type: 'max',
             valueDim: 'highest',
-            symbol: 'pin', 
+            symbol: 'pin',
             symbolSize: 40,
             itemStyle: {
-                color: 'yellow' // Set marker color to yellow
-            },
-            // label: {
-            //     position: 'bottom'
-            // }
+                color: 'yellow'
+            }
         }, {
             name: '最低',
             type: 'min',
             valueDim: 'lowest',
             symbol: 'pin',
-            symbolRotate: 180, 
-            symbolOffset: [0, 0], 
+            symbolRotate: 180,
+            symbolOffset: [0, 0],
             symbolSize: 40,
             itemStyle: {
-                color: 'yellow' 
+                color: 'yellow'
             },
             label: {
-                // position: 'bottom', // Position the label below the pin
-                // formatter: '{c}', // Display the value of the point
-                // color: 'yellow', // Set label color to yellow
-                offset: [0, 10] // Move the label down a little bit further
+                offset: [0, 10]
             }
         }]
     };
 
+    // Add Subcharts (RSI and Volume) if available
+    if (subchartCount >= 1) {
+        if (strategiesData.rsi) {
+            options.series.push({
+                name: 'RSI',
+                type: 'line',
+                data: strategiesData.rsi,
+                smooth: false,
+                lineStyle: { width: 1 },
+                itemStyle: { color: '#ff00ff' },
+                showSymbol: false,
+                xAxisIndex: 1,  // Sync with the subchart x-axis
+                yAxisIndex: 1   // Sync with the subchart y-axis
+            });
+            console.log("RSI data added to chart.");
+        }
+
+        if (strategiesData.vol) {
+            options.series.push({
+                name: 'Volume',
+                type: 'bar',
+                data: strategiesData.vol,
+                itemStyle: { color: '#0000ff' },
+                xAxisIndex: 1,  // Sync with the subchart x-axis
+                yAxisIndex: 1   // Sync with the subchart y-axis
+            });
+            console.log("Volume data added to chart.");
+        }
+    }
+
+    // Set the final options
     chart.setOption(options);
+    console.log("Chart options applied.");
 }
 
-
 function resetChart() {
-    chart.dispatchAction({ type: 'restore' });
+    console.log("resetChart() called");
+    buildChart(fetchedData.main, fetchedData.strategies);
+}
+
+function updateSubcharts() {
+    console.log("updateSubcharts() called.");
+    resetChart();
 }

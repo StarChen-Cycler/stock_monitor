@@ -20,6 +20,7 @@ EXCLUDED = [
     f"{APP_FOLDER_NAME}/__pycache__",
     f"{APP_FOLDER_NAME}/site.db",
     f"{APP_FOLDER_NAME}/data_loader/__pycache__",
+    f"{APP_FOLDER_NAME}/strategies/__pycache__",
     # os.path.join(APP_FOLDER_NAME, "migrations"),  # Exclude the migrations folder
     # os.path.join(APP_FOLDER_NAME, "__pycache__"), # Exclude Python cache files
     # os.path.join(APP_FOLDER_NAME, "site.db"),     # Exclude the SQLite database

@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.1/dist/echarts.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/chart_utils.js') }}"></script>
+    <!-- <script src="{{ url_for('static', filename='js/subchart_manager.js') }}"></script> -->
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 </head>
 <body>
@@ -21,15 +22,21 @@
                 <input type="text" id="stockInput" name="stockInput" placeholder="Enter ts_code" class="form-control" value="00001" onkeypress="if (event.which == 13) searchStock()">
             </div>
         </div>
-        <div id="stockChart" class="chart-container"></div>
+        <div class="subchart-controls">
+            <label for="subchartCount">Subcharts:</label>
+            <select id="subchartCount" onchange="updateSubcharts()">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="1">2</option>
+                <option value="1">3</option>
+                <option value="1">4</option>
+                <option value="1">5</option>
+            </select>
+        </div>
         <div class="interaction-panel">
             <button onclick="resetChart()" class="btn btn-sm">Reset View</button>
         </div>
+        <div id="stockChart" class="chart-container"></div>        
     </div>
-    <script>
-        $(document).ready(function() {
-            searchStock();
-        });
-    </script>
 </body>
 </html>
