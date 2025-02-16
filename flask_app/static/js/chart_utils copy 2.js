@@ -29,6 +29,7 @@ function searchStock() {
                 return;
             }
             fetchedData = data;
+            updateSubchartSelectorsOptions(); 
             buildChart(data.main, data.strategies);
         },
         error: function(xhr, status, error) {
@@ -285,69 +286,87 @@ function buildChart(mainData, strategiesData) {
         }]
     };
 
-    // Add Subcharts (RSI and Volume) if available
-    // Dynamically add strategies to the chart based on the selected subchart count
-    if (subchartCount >= 1 && strategiesData.rsi) {
-        options.series.push({
-            name: 'RSI',
-            type: 'line',
-            data: strategiesData.rsi,
-            smooth: false,
-            lineStyle: { width: 1 },
-            itemStyle: { color: '#ff00ff' },
-            showSymbol: false,
-            xAxisIndex: 1,  // Sync with the subchart x-axis
-            yAxisIndex: 1   // Sync with the subchart y-axis
-        });
-    }
+    // // Add Subcharts (RSI and Volume) if available
+    // // Dynamically add strategies to the chart based on the selected subchart count
+    // if (subchartCount >= 1 && strategiesData.rsi) {
+    //     options.series.push({
+    //         name: 'RSI',
+    //         type: 'line',
+    //         data: strategiesData.rsi,
+    //         smooth: false,
+    //         lineStyle: { width: 1 },
+    //         itemStyle: { color: '#ff00ff' },
+    //         showSymbol: false,
+    //         xAxisIndex: 1,  // Sync with the subchart x-axis
+    //         yAxisIndex: 1   // Sync with the subchart y-axis
+    //     });
+    // }
 
-    // Dynamically add strategies to the chart based on the selected subchart count
-    if (subchartCount >= 2 && strategiesData.lowest_vol_today) {
-        options.series.push({
-            name: 'Days Since Highest Volume',
-            type: 'line',
-            data: strategiesData.lowest_vol_today,
-            smooth: false,
-            lineStyle: { width: 1 },
-            itemStyle: { color: '#ff0000' },
-            showSymbol: false,
-            xAxisIndex: 2,  // Sync with the subchart x-axis
-            yAxisIndex: 2   // Sync with the subchart y-axis
-        });
-        console.log("Days Since Highest Volume data added to chart.");
-    }
-    // Dynamically add strategies to the chart based on the selected subchart count
-    if (subchartCount >= 3 && strategiesData.highest_vol_today) {
-        options.series.push({
-            name: 'Days Since Lowest Volume',
-            type: 'line',
-            data: strategiesData.highest_vol_today,
-            smooth: false,
-            lineStyle: { width: 1 },
-            itemStyle: { color: '#0000ff' },
-            showSymbol: false,
-            xAxisIndex: 3,  // Sync with the subchart x-axis
-            yAxisIndex: 3   // Sync with the subchart y-axis
-        });
-        console.log("Days Since Lowest Volume data added to chart.");
-    }
-    // Dynamically add strategies to the chart based on the selected subchart count
-    if (subchartCount >= 4 && strategiesData.volume) {
-        options.series.push({
-            name: 'Volume',
-            type: 'bar',
-            data: strategiesData.volume,
-            smooth: false,
-            lineStyle: { width: 1 },
-            itemStyle: { color: '#0f00ff' },
-            showSymbol: false,
-            xAxisIndex: 4,  // Sync with the subchart x-axis
-            yAxisIndex: 4   // Sync with the subchart y-axis
-        });
-        console.log("Volume data added to chart.");
-    }
+    // // Dynamically add strategies to the chart based on the selected subchart count
+    // if (subchartCount >= 2 && strategiesData.days_since_highest_vol) {
+    //     options.series.push({
+    //         name: 'Days Since Highest Volume',
+    //         type: 'line',
+    //         data: strategiesData.days_since_highest_vol,
+    //         smooth: false,
+    //         lineStyle: { width: 1 },
+    //         itemStyle: { color: '#ff0000' },
+    //         showSymbol: false,
+    //         xAxisIndex: 2,  // Sync with the subchart x-axis
+    //         yAxisIndex: 2   // Sync with the subchart y-axis
+    //     });
+    //     console.log("Days Since Highest Volume data added to chart.");
+    // }
+    // // Dynamically add strategies to the chart based on the selected subchart count
+    // if (subchartCount >= 3 && strategiesData.days_since_lowest_vol) {
+    //     options.series.push({
+    //         name: 'Days Since Lowest Volume',
+    //         type: 'line',
+    //         data: strategiesData.days_since_lowest_vol,
+    //         smooth: false,
+    //         lineStyle: { width: 1 },
+    //         itemStyle: { color: '#0000ff' },
+    //         showSymbol: false,
+    //         xAxisIndex: 3,  // Sync with the subchart x-axis
+    //         yAxisIndex: 3   // Sync with the subchart y-axis
+    //     });
+    //     console.log("Days Since Lowest Volume data added to chart.");
+    // }
+    // // Dynamically add strategies to the chart based on the selected subchart count
+    // if (subchartCount >= 4 && strategiesData.volume) {
+    //     options.series.push({
+    //         name: 'Volume',
+    //         type: 'bar',
+    //         data: strategiesData.volume,
+    //         smooth: false,
+    //         lineStyle: { width: 1 },
+    //         itemStyle: { color: '#0f00ff' },
+    //         showSymbol: false,
+    //         xAxisIndex: 4,  // Sync with the subchart x-axis
+    //         yAxisIndex: 4   // Sync with the subchart y-axis
+    //     });
+    //     console.log("Volume data added to chart.");
+    // }
 
-
+    for (let i = 0; i < subchartCount; i++) {
+        const selectorId = `subchart${i + 1}`;
+        const selectedStrategy = $(`#${selectorId}`).val();
+        if (selectedStrategy && strategiesData[selectedStrategy]) {
+            const seriesName = selectedStrategy;
+            options.series.push({
+                name: seriesName,
+                type: selectedStrategy === 'volume' ? 'bar' : 'line',
+                data: strategiesData[selectedStrategy],
+                smooth: false,
+                lineStyle: { width: 1 },
+                itemStyle: { color: getColorForStrategy(seriesName) },
+                showSymbol: false,
+                xAxisIndex: i + 1,
+                yAxisIndex: i + 1
+            });
+            console.log(`${seriesName} data added to chart.`);
+        }
+    }
 
     // Set the final options
     chart.setOption(options);
@@ -361,5 +380,128 @@ function resetChart() {
 
 function updateSubcharts() {
     console.log("updateSubcharts() called.");
+    updateSubchartSelectors()
     resetChart();
+}
+
+function updateChartForSubchart(selectorId) {
+    console.log(`Subchart selector ${selectorId} changed.`);
+    resetChart(); 
+}
+
+
+// // Function to update subchart selectors based on subchartCount
+// function updateSubchartSelectors() {
+//     console.log("11111111111111111111111")
+//     const subchartCount = parseInt($('#subchartCount').val());
+//     const selectorsContainer = $('.subchart-selectors-container');
+//     selectorsContainer.empty(); // Clear existing selectors
+
+//     for (let i = 0; i < subchartCount; i++) {
+//         const selector = $('<select>', {
+//             id: `subchart${i + 1}`,
+//             class: 'subchart-selector',
+//             onchange: 'updateSubcharts()'
+//         });
+
+//         // If data is available, populate options
+//         if (fetchedData && fetchedData.strategies) {
+//             const strategies = Object.keys(fetchedData.strategies);
+//             strategies.forEach(strategy => {
+//                 $('<option>', {
+//                     value: strategy,
+//                     text: strategy
+//                 }).appendTo(selector);
+//             });
+//         }
+
+//         selectorsContainer.append(selector);
+//     }
+// }
+
+// // Function to populate selector options when data is fetched
+// function updateSubchartSelectorsOptions() {
+//     if (!fetchedData || !fetchedData.strategies) return;
+
+//     const strategies = Object.keys(fetchedData.strategies);
+//     $('.subchart-selector').each(function(index) {
+//         $(this).empty(); // Clear existing options
+//         strategies.forEach(strategy => {
+//             $('<option>', {
+//                 value: strategy,
+//                 text: strategy
+//             }).appendTo(this);
+//         });
+//         // Default to first strategy
+//         $(this).val(strategies[0]).change();
+//     });
+// }
+
+
+// function getColorForStrategy(strategyName) {
+//     switch (strategyName) {
+//         case 'rsi': return '#ff00ff';
+//         case 'days_since_highest_vol': return '#ff0000';
+//         case 'days_since_lowest_vol': return '#0000ff';
+//         case 'volume': return '#0f00ff';
+//         default: return '#000000';
+//     }
+// }
+
+// Function to update subchart selectors based on subchartCount
+function updateSubchartSelectors() {
+    const subchartCount = parseInt($('#subchartCount').val());
+    const selectorsContainer = $('.subchart-selectors-container');
+    selectorsContainer.empty();
+
+    for (let i = 0; i < subchartCount; i++) {
+        const selector = $('<select>', {
+            id: `subchart${i + 1}`,
+            class: 'subchart-selector',
+            onchange: function () {
+                // Only update the chart for this specific subchart, no need to call updateSubcharts
+                updateChartForSubchart(this.id); 
+            }
+        });
+
+        if (fetchedData && fetchedData.strategies) {
+            const strategies = Object.keys(fetchedData.strategies);
+            strategies.forEach(strategy => {
+                $('<option>', {
+                    value: strategy,
+                    text: strategy
+                }).appendTo(selector);
+            });
+        }
+
+        selectorsContainer.append(selector);
+    }
+}
+
+// Function to populate selector options when data is fetched
+function updateSubchartSelectorsOptions() {
+    if (!fetchedData || !fetchedData.strategies) return;
+
+    const strategies = Object.keys(fetchedData.strategies);
+    $('.subchart-selector').each(function(index) {
+        $(this).empty(); // Clear existing options
+        strategies.forEach(strategy => {
+            $('<option>', {
+                value: strategy,
+                text: strategy
+            }).appendTo(this);
+        });
+        // Default to first strategy
+        $(this).val(strategies[0]).change();
+    });
+}
+
+function getColorForStrategy(strategyName) {
+    switch (strategyName) {
+        case 'rsi': return '#ff00ff';
+        case 'days_since_highest_vol': return '#ff0000';
+        case 'days_since_lowest_vol': return '#0000ff';
+        case 'volume': return '#0f00ff';
+        default: return '#000000';
+    }
 }

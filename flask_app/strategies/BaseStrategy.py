@@ -14,7 +14,7 @@ class BaseStrategy(ABC):
             **params: Additional parameters specific to the strategy.
             
         Returns:
-            dict: Processed data and metadata.
+            Dataframes: Processed data.
         """
         pass
         raise NotImplementedError("Subclasses must implement the 'calculate' method.")

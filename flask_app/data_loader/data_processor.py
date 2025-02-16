@@ -1,6 +1,11 @@
 from strategies.StrategyManager import StrategyManager
 import pandas as pd
 
+# Helper function to replace NaN values (can be reused in data_processor)
+def replace_invalid(arr):
+    """Replace invalid values (NaN) with 0."""
+    return arr.fillna(0)
+
 def process_main_stock_data(df: pd.DataFrame) -> dict:
     """Process main stock data for visualization."""
     df = df.copy()  # Explicitly create a copy
@@ -25,7 +30,35 @@ def process_main_stock_data(df: pd.DataFrame) -> dict:
     }
 
 
-def process_strategy_data(df, strategy_configs):
+# def process_strategy_data(df, strategy_configs):
+#     """
+#     Process stock data using the provided strategy configurations.
+    
+#     :param df: DataFrame containing stock data.
+#     :param strategy_configs: List of strategy configurations.
+#     :return: Dictionary with strategy names and calculated results.
+#     """
+#     results = {}
+#     manager = StrategyManager()
+
+#     df = df.copy()  # Explicitly create a copy
+#     numerical_columns = ['open', 'high', 'low', 'close', 'vol', 'amount']
+#     df = df[numerical_columns].copy()
+#     df = df.astype(float)
+
+#     for config in strategy_configs:
+#         strategy = manager.get_strategy(config["name"])
+#         if strategy:
+#             df_result = strategy.calculate(df, **config["params"])
+#             # Convert the DataFrame result to list format for the front-end
+#             results[config["name"]] = replace_invalid(df_result.iloc[:, 0]).tolist()
+#         else:
+#             results[config["name"]] = {"error": f"Strategy {config['name']} not found."}
+
+#     print("results:",results[:500])
+#     return results
+
+def process_strategy_data(df: pd.DataFrame, strategy_configs: list) -> dict:
     """
     Process stock data using the provided strategy configurations.
     
@@ -41,14 +74,34 @@ def process_strategy_data(df, strategy_configs):
     df = df[numerical_columns].copy()
     df = df.astype(float)
 
+    # Loop over strategy configurations and process
     for config in strategy_configs:
         strategy = manager.get_strategy(config["name"])
         if strategy:
-            results[config["name"]] = strategy.calculate(df, **config["params"])
+            # Get the required input params for the strategy
+            input_params = strategy.get_input_parameters()
+
+            # Adjust input parameters if they are missing
+            adjusted_params = {param: config["params"].get(param, default) for param, default in input_params.items()}
+
+            try:
+                # Run the strategy with the adjusted parameters
+                df_result = strategy.calculate(df, **adjusted_params)
+
+                # Replace NaN values
+                df_result = replace_invalid(df_result)
+
+                # Add results to the output dictionary based on strategy outputs
+                for output_name, _ in df_result.items():
+                    results[output_name] = df_result[output_name].tolist()
+
+            except TypeError as e:
+                results[config["name"]] = {"error": f"Error with strategy {config['name']}: {str(e)}"}
         else:
             results[config["name"]] = {"error": f"Strategy {config['name']} not found."}
-    
+
     return results
+
 
 
 def calculate_ma(period: int, data: list) -> list:

@@ -37,7 +37,7 @@ def replace_invalid(arr):
     return [x if pd.notnull(x) else 0 for x in arr]
 
 
-
+# for testing
 def load_parquet(file_path):
     """
     Load a Parquet file into a Pandas DataFrame.

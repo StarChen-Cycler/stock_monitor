@@ -9,6 +9,7 @@ from config import Config
 from flask import jsonify
 from data_loader.data_loader import load_parquet
 from data_loader.data_processor import process_main_stock_data, process_strategy_data
+from strategies.StrategyManager import StrategyManager
 
 # ================== 配置区域 ==================
 # Define the base path of the app
@@ -139,32 +140,31 @@ def stock_data():
         strategies = []
 
     if not strategies:
-        strategies = [{'name': 'rsi', 'params': {'period': 10}}]
-    
+        available_strategies = StrategyManager.available_strategies()  # Get all strategies dynamically
+        strategies = [{'name': strategy, 'params': {**StrategyManager.get_strategy(strategy).get_input_parameters()}} for strategy in available_strategies]
+
     if not ts_code:
         return jsonify({'error': 'Missing ts_code'}), 400
     
     stock_data = df[df['ts_code'] == ts_code]
     if stock_data.empty:
         return jsonify({'error': 'No data found'}), 404
-    
+
     # Process main stock data
     main_data = process_main_stock_data(stock_data)
-    
+
     # Process strategies
     strategy_results = process_strategy_data(stock_data, strategies)
 
-    
     # Combine results
     response = {
         'main': main_data,
         'strategies': strategy_results
     }
 
-    # print('main_length:', main_data)
-    # print('strategy_results_length:', strategy_results)
-    
     return jsonify(response)
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
