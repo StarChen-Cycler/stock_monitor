@@ -1,16 +1,106 @@
 let chart = null;
 let subcharts = [];
-let fetchedData = null; // Move fetchedData to global scope
+let fetchedData = null;
+
+// Add cache management functions
+function saveToCache(tsCode, data) {
+    try {
+        const cache = JSON.parse(localStorage.getItem('stockDataCache') || '{}');
+        cache[tsCode] = {
+            data: data,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('stockDataCache', JSON.stringify(cache));
+    } catch (e) {
+        console.error('Error saving to cache:', e);
+        // If localStorage is full, clear it and try again
+        localStorage.clear();
+        try {
+            const cache = {};
+            cache[tsCode] = {
+                data: data,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('stockDataCache', JSON.stringify(cache));
+        } catch (e) {
+            console.error('Failed to save to cache even after clearing:', e);
+        }
+    }
+}
+
+function getFromCache(tsCode) {
+    try {
+        const cache = JSON.parse(localStorage.getItem('stockDataCache') || '{}');
+        const cachedData = cache[tsCode];
+        
+        if (!cachedData) return null;
+
+        // Check if cache is older than 24 hours
+        const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        if (Date.now() - cachedData.timestamp > CACHE_DURATION) {
+            // Remove expired cache
+            delete cache[tsCode];
+            localStorage.setItem('stockDataCache', JSON.stringify(cache));
+            return null;
+        }
+
+        return cachedData.data;
+    } catch (e) {
+        console.error('Error reading from cache:', e);
+        return null;
+    }
+}
+
+function saveSettings() {
+    const settings = {
+        stockCode: $('#stockInput').val(),
+        subchartCount: $('#subchartCount').val(),
+        subchartSelections: {}
+    };
+    
+    // Save all subchart selections, even if they're not currently visible
+    $('.subchart-selector').each(function(index) {
+        const id = $(this).attr('id');
+        settings.subchartSelections[id] = $(this).val();
+    });
+    
+    // Also save any previously saved selections that aren't currently in the DOM
+    if (window.savedSubchartSelections) {
+        Object.keys(window.savedSubchartSelections).forEach(key => {
+            if (!settings.subchartSelections[key]) {
+                settings.subchartSelections[key] = window.savedSubchartSelections[key];
+            }
+        });
+    }
+    
+    localStorage.setItem('stockChartSettings', JSON.stringify(settings));
+}
+
+function loadSettings() {
+    const savedSettings = localStorage.getItem('stockChartSettings');
+    if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        
+        $('#stockInput').val(settings.stockCode || '00001');
+        $('#subchartCount').val(settings.subchartCount || '0');
+        
+        // Store selections in window for persistence
+        window.savedSubchartSelections = settings.subchartSelections || {};
+    }
+}
 
 $(document).ready(function() {
+    loadSettings();
     searchStock();
     
-    // Add window resize handler
     window.addEventListener('resize', function() {
         if (chart) {
             chart.resize();
         }
     });
+
+    $('#stockInput').on('change', saveSettings);
+    $('#subchartCount').on('change', saveSettings);
 });
 
 function searchStock() {
@@ -22,19 +112,32 @@ function searchStock() {
         return;
     }
 
-    // Fetch data and build chart
+    // Try to get data from cache first
+    const cachedData = getFromCache(tsCode);
+    if (cachedData) {
+        console.log("Using cached data for", tsCode);
+        fetchedData = cachedData;
+        updateSubchartSelectors();
+        buildChart(cachedData.main, cachedData.strategies);
+        return;
+    }
+
+    // If not in cache, fetch from server
     $.ajax({
         url: '/stock_data',
         method: 'GET',
         data: { ts_code: tsCode },
         dataType: 'json',
         success: function(data) {
-            console.log("Data received:", data);
+            console.log("Data received from server:", data);
             if (data.error) {
                 alert(data.error);
                 console.log("Error in data:", data.error);
                 return;
             }
+            // Save to cache
+            saveToCache(tsCode, data);
+            
             fetchedData = data;
             updateSubchartSelectors();
             buildChart(data.main, data.strategies);
@@ -369,6 +472,7 @@ function updateSubchartSelectors() {
     });
 
     for (let i = 0; i < subchartCount; i++) {
+        const selectorId = `subchart${i + 1}`;
         const selectorContainer = $('<div>', {
             css: {
                 display: 'flex',
@@ -377,18 +481,16 @@ function updateSubchartSelectors() {
             }
         });
 
-        // Add label
         const label = $('<label>', {
             text: `Subchart ${i + 1}:`,
-            for: `subchart${i + 1}`,
+            for: selectorId,
             css: {
                 color: 'white'
             }
         });
 
-        // Create selector
         const selector = $('<select>', {
-            id: `subchart${i + 1}`,
+            id: selectorId,
             class: 'subchart-selector',
             css: {
                 padding: '8px',
@@ -401,29 +503,15 @@ function updateSubchartSelectors() {
             }
         });
 
-        // Style the options
-        selector.on('mousedown', function(e) {
-            $(this).data('select', true);
-        }).on('blur', function(e) {
-            $(this).data('select', false);
-        }).on('change', function() {
+        selector.on('change', function() {
+            const id = $(this).attr('id');
+            if (!window.savedSubchartSelections) {
+                window.savedSubchartSelections = {};
+            }
+            window.savedSubchartSelections[id] = $(this).val();
             updateChartForSubchart(this.id);
+            saveSettings();
         });
-
-        // Add styles to option elements when they're added to the DOM
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.addedNodes.length) {
-                    $(mutation.target).find('option').css({
-                        background: '#2c2c2c',
-                        color: 'white',
-                        padding: '8px'
-                    });
-                }
-            });
-        });
-
-        observer.observe(selector[0], { childList: true });
 
         selectorContainer.append(label, selector);
         selectorsWrapper.append(selectorContainer);
@@ -433,12 +521,12 @@ function updateSubchartSelectors() {
     updateSubchartSelectorsOptions();
 }
 
-// Function to populate selector options when data is fetched
 function updateSubchartSelectorsOptions() {
     if (!fetchedData || !fetchedData.strategies) return;
 
     const strategies = Object.keys(fetchedData.strategies);
     $('.subchart-selector').each(function(index) {
+        const selectorId = this.id;
         $(this).empty();
         
         // Add placeholder option
@@ -466,9 +554,19 @@ function updateSubchartSelectorsOptions() {
             }).appendTo(this);
         });
 
-        // Set default value to first strategy if available
-        if (strategies.length > 0) {
-            $(this).val(strategies[Math.min(index, strategies.length - 1)]);
+        // Set saved value if available, otherwise default to first strategy
+        if (window.savedSubchartSelections && window.savedSubchartSelections[selectorId]) {
+            $(this).val(window.savedSubchartSelections[selectorId]);
+        } else if (strategies.length > 0) {
+            // Only set default if no saved selection exists
+            const defaultStrategy = strategies[Math.min(index, strategies.length - 1)];
+            $(this).val(defaultStrategy);
+            // Save this default selection
+            if (!window.savedSubchartSelections) {
+                window.savedSubchartSelections = {};
+            }
+            window.savedSubchartSelections[selectorId] = defaultStrategy;
+            saveSettings();
         }
     });
 

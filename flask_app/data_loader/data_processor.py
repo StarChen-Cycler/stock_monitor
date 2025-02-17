@@ -103,7 +103,7 @@ def process_strategy_data(df: pd.DataFrame, strategy_configs: list) -> dict:
                         'color': '#000000',
                         'name': output_name
                     })
-                    # print(f"Using config for {output_name}: {config_for_output}")
+                    print(f"Using config for {output_name}: {config_for_output}")
                     
                     results[output_name] = {
                         'data': data.tolist(),
