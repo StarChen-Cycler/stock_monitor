@@ -1,9 +1,16 @@
 let chart = null;
 let subcharts = [];
+let fetchedData = null; // Move fetchedData to global scope
 
 $(document).ready(function() {
-    let fetchedData = null; // Declare a variable to hold the fetched data
-    searchStock(fetchedData);
+    searchStock();
+    
+    // Add window resize handler
+    window.addEventListener('resize', function() {
+        if (chart) {
+            chart.resize();
+        }
+    });
 });
 
 function searchStock() {
@@ -41,6 +48,11 @@ function searchStock() {
 // Helper function to create initial configuration for charts and also for updating the chart
 function setChartParams(subchartCount, mainData) {
     // Fixed pixel values for positioning and grid heights
+    const chartContainer = document.getElementById('stockChart');
+    const containerWidth = chartContainer.clientWidth;
+    const leftMargin = 50;
+    const rightMargin = 50;
+    const gridWidth = containerWidth - leftMargin - rightMargin;
     const chartHeight = 1200;  // Height of the chart container
     const mainChartHeight = 500;  // Main chart height (candlestick)
     const subchartHeight = 150;  // Each subchart (RSI, Volume) height
@@ -106,7 +118,6 @@ function setChartParams(subchartCount, mainData) {
             xAxisIndex: [0,1,2,3,4,5],
             start: startPoint,
             end: endPoint
-            
         }
     ];
 

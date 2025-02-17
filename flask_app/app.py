@@ -1,5 +1,5 @@
-
 import os
+import requests
 from flask import Flask,render_template_string, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_required, logout_user, login_user, current_user
 from auth import authenticate_user, register_user
@@ -25,7 +25,7 @@ INDEX_TEMPLATE_PATH = os.path.join(TEMPLATES_FOLDER, 'index.html')
 REGISTER_TEMPLATE_PATH = os.path.join(TEMPLATES_FOLDER, 'register.html')
 LOGIN_TEMPLATE_PATH = os.path.join(TEMPLATES_FOLDER, 'login.html')
 STOCK_TEMPLATE_PATH = os.path.join(TEMPLATES_FOLDER, 'stock.html')
-
+CHAT_TEMPLATE_PATH = os.path.join(TEMPLATES_FOLDER, 'chat.html')
 # ================== 初始化区域 ==================
 # Initialize Flask app with template and static folder paths
 app = Flask(__name__, template_folder=TEMPLATES_FOLDER, static_folder=STATIC_FOLDER)
@@ -164,7 +164,50 @@ def stock_data():
 
     return jsonify(response)
 
+# Add a new route for the chatbox page
+# @app.route('/chat')
+# @login_required
+# def chat():
+#     with open(CHAT_TEMPLATE_PATH, 'r') as file:
+#         html_content = file.read()
+#     return render_template_string(html_content, username=current_user.username)
 
+# Added new endpoint for chat messages
+@app.route('/chat_message', methods=['POST'])
+@login_required
+def chat_message():
+    user_message = request.json.get('message', '')
+    if not user_message:
+        return jsonify({"error": "No message provided"}), 400
+
+    url = "https://api.siliconflow.cn/v1/chat/completions"
+    payload = {
+        "model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+        "messages": [
+            {"role": "user", "content": user_message}
+        ],
+        "stream": False,
+        "max_tokens": 512,
+        "stop": ["null"],
+        "temperature": 0.7,
+        "top_p": 0.7,
+        "top_k": 50,
+        "frequency_penalty": 0.5,
+        "n": 1,
+        "response_format": {"type": "text"}
+    }
+    headers = {
+        "Authorization": "Bearer sk-pslfsadqmaolfpncuucdtiytsumfckvnlvpfukvbalovxujs",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        api_response = requests.post(url, json=payload, headers=headers)
+        data = api_response.json()
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        return jsonify({"response": content})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

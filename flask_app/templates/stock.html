@@ -2,42 +2,121 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Stock Analytics</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/stock.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.1/dist/echarts.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/chart_utils.js') }}"></script>
     <!-- <script src="{{ url_for('static', filename='js/subchart_manager.js') }}"></script> -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 </head>
 <body>
+    <button class="menu-button" id="menuButton">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <div class="sidebar" id="sidebar">
+        <div class="user-info">
+            <h2>Welcome, {{ username }}!</h2>
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('stock') }}" class="nav-link">Analyze Stocks</a>
+            <a href="{{ url_for('dashboard') }}" class="nav-link">Chat Assistant</a>
+            <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        </div>
+    </div>
+
     <div class="stock-container">
         <h2>Stock Analyzer</h2>
-        <div class="search-container">
-            <div class="input-group">
-                <label for="stockInput">Stock Code</label>
-                <!-- Set default value to "00001" -->
-                <input type="text" id="stockInput" name="stockInput" placeholder="Enter ts_code" class="form-control" value="00001" onkeypress="if (event.which == 13) searchStock()">
+        
+        <div class="controls-wrapper">
+            <div class="search-container">
+                <div class="input-group">
+                    <label for="stockInput">Stock Code:</label>
+                    <input type="text" id="stockInput" name="stockInput" placeholder="Enter ts_code" value="00001" onkeypress="if (event.which == 13) searchStock()">
+                </div>
+            </div>
+
+            <div class="subchart-controls">
+                <label for="subchartCount">Subcharts:</label>
+                <select id="subchartCount" onchange="updateSubcharts()">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+                <div class="subchart-selectors-container"></div>
+            </div>
+
+            <div class="interaction-panel">
+                <button onclick="resetChart()" class="btn btn-sm">Reset View</button>
             </div>
         </div>
-        <div class="subchart-controls">
-            <label for="subchartCount">Subcharts:</label>
-            <select id="subchartCount" onchange="updateSubcharts()">
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-            </select>
-            <div class="subchart-selectors-container"></div>
-        </div>
-        <div class="interaction-panel">
-            <button onclick="resetChart()" class="btn btn-sm">Reset View</button>
-        </div>
-        <div id="stockChart" class="chart-container"></div>        
+
+        <div id="stockChart" class="chart-container"></div>
     </div>
+
+    <script>
+        const menuButton = document.getElementById('menuButton');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        let isOpen = false;
+
+        function toggleSidebar(event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            isOpen = !isOpen;
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+            menuButton.innerHTML = isOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+        }
+
+        function closeSidebar(event) {
+            if (isOpen) {
+                isOpen = false;
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+                menuButton.innerHTML = '<i class="fas fa-bars"></i>';
+            }
+        }
+
+        // Menu button click handler
+        menuButton.addEventListener('click', function(event) {
+            event.stopPropagation();
+            toggleSidebar();
+        });
+
+        // Overlay click handler
+        sidebarOverlay.addEventListener('click', function(event) {
+            event.stopPropagation();
+            closeSidebar();
+        });
+
+        // Close sidebar when clicking outside
+        document.addEventListener('click', function(event) {
+            if (isOpen && 
+                !sidebar.contains(event.target) && 
+                !menuButton.contains(event.target)) {
+                closeSidebar();
+            }
+        });
+
+        // Prevent clicks inside sidebar from closing it
+        sidebar.addEventListener('click', function(event) {
+            event.stopPropagation();
+        });
+
+        $(document).ready(function() {
+            searchStock();
+        });
+    </script>
 </body>
 </html>

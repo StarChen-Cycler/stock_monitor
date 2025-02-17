@@ -28,6 +28,7 @@
     "flask_app/strategies/strategy_origin/LowestVOLStrategy.py",
     "flask_app/strategies/strategy_origin/MACDStrategy.py",
     "flask_app/strategies/strategy_origin/RSIStrategy.py",
+    "flask_app/templates/chat.html",
     "flask_app/templates/dashboard.html",
     "flask_app/templates/index.html",
     "flask_app/templates/login.html",

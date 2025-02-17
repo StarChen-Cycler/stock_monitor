@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        /* Inline styles for chatbox, adjust as needed */
+        .chatbox {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .chatbox-header {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .chatbox-messages {
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+            padding: 5px;
+            margin-bottom: 10px;
+            background-color: #fff;
+        }
+        .chatbox-input {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chatbox">
+        <div class="chatbox-header">Welcome, {{ username }}!</div>
+        <div class="chatbox-messages">
+            <!-- Messages will appear here -->
+        </div>
+        <input type="text" class="chatbox-input" placeholder="Type a message...">
+    </div>
+</body>
+</html> 
