@@ -91,9 +91,24 @@ def process_strategy_data(df: pd.DataFrame, strategy_configs: list) -> dict:
                 # Replace NaN values
                 df_result = replace_invalid(df_result)
 
+                # Get strategy configuration
+                strategy_config = strategy.get_config()
+                print(f"Strategy {strategy.name()} config: {strategy_config}")
+
                 # Add results to the output dictionary based on strategy outputs
-                for output_name, _ in df_result.items():
-                    results[output_name] = df_result[output_name].tolist()
+                for output_name, data in df_result.items():
+                    print(f"Processing output {output_name} for strategy {strategy.name()}")
+                    config_for_output = strategy_config.get(output_name, {
+                        'type': 'line',
+                        'color': '#000000',
+                        'name': output_name
+                    })
+                    # print(f"Using config for {output_name}: {config_for_output}")
+                    
+                    results[output_name] = {
+                        'data': data.tolist(),
+                        'config': config_for_output
+                    }
 
             except TypeError as e:
                 results[config["name"]] = {"error": f"Error with strategy {config['name']}: {str(e)}"}

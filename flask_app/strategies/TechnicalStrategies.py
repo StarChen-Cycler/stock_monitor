@@ -30,6 +30,15 @@ class VolumeStrategy(BaseStrategy):
         """Return the name of the strategy in lowercase."""
         return "volume"
 
+    def get_config(self):
+        return {
+            'volume': {
+                'color': '#0f00ff',
+                'type': 'bar',
+                'name': 'Volume'
+            }
+        }
+
 
 # MACD Strategy
 class MACDStrategy(BaseStrategy):
@@ -58,6 +67,20 @@ class MACDStrategy(BaseStrategy):
     def name(self):
         """Return the name of the strategy in lowercase."""
         return "macd"
+
+    def get_config(self):
+        return {
+            'macd': {
+                'color': '#00ff00',
+                'type': 'line',
+                'name': 'MACD'
+            },
+            'signal': {
+                'color': '#ffff00',
+                'type': 'line',
+                'name': 'Signal'
+            }
+        }
 
 # RSI Strategy
 class RSIStrategy(BaseStrategy):
@@ -88,6 +111,15 @@ class RSIStrategy(BaseStrategy):
         """Return the name of the strategy in lowercase."""
         return "rsi"
 
+    def get_config(self):
+        return {
+            'rsi': {
+                'color': '#ff00ff',
+                'type': 'line',
+                'name': 'RSI'
+            }
+        }
+
 # Volume-based Strategies
 class HighestVOLStrategy(BaseStrategy):
     """This strategy checks if the volume of the current day is the highest in the last N days."""
@@ -109,6 +141,15 @@ class HighestVOLStrategy(BaseStrategy):
         """Return the name of the strategy in lowercase."""
         return "highest_volume_today"
 
+    def get_config(self):
+        return {
+            'highest_vol_today': {
+                'color': '#ff0000',
+                'type': 'line',
+                'name': 'Highest Volume Today'
+            }
+        }
+
 class LowestVOLStrategy(BaseStrategy):
     """This strategy checks if the volume of the current day is the lowest in the last N days."""
     
@@ -128,6 +169,15 @@ class LowestVOLStrategy(BaseStrategy):
     def name(self):
         """Return the name of the strategy in lowercase."""
         return "lowest_volume_today"
+
+    def get_config(self):
+        return {
+            'lowest_vol_today': {
+                'color': '#0000ff',
+                'type': 'line',
+                'name': 'Lowest Volume Today'
+            }
+        }
 
 
 class ExistHighestVOLStrategy(BaseStrategy):
@@ -158,6 +208,15 @@ class ExistHighestVOLStrategy(BaseStrategy):
         """Return the name of the strategy in lowercase."""
         return "days_since_last_high"
 
+    def get_config(self):
+        return {
+            'days_since_highest_vol': {
+                'color': '#0000ff',
+                'type': 'line',
+                'name': 'Days Since Highest Volume'
+            }
+        }
+
 
 
     
@@ -185,6 +244,15 @@ class ExistLowestVOLStrategy(BaseStrategy):
     def name(self):
         """Return the name of the strategy in lowercase."""
         return "days_since_last_low"
+
+    def get_config(self):
+        return {
+            'days_since_lowest_vol': {
+                'color': '#ff0000',
+                'type': 'line',
+                'name': 'Days Since Lowest Volume'
+            }
+        }
 
 
 

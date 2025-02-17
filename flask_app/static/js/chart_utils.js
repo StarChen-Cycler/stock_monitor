@@ -36,6 +36,7 @@ function searchStock() {
                 return;
             }
             fetchedData = data;
+            updateSubchartSelectors();
             buildChart(data.main, data.strategies);
         },
         error: function(xhr, status, error) {
@@ -178,7 +179,7 @@ function buildChart(mainData, strategiesData) {
     const subchartCount = parseInt($('#subchartCount').val());
     console.log("Subchart count:", subchartCount);
 
-    const { gridConfig, legendConfig, xAxisConfig, yAxisConfig,dataZoomConfig} = setChartParams(subchartCount, mainData);
+    const { gridConfig, legendConfig, xAxisConfig, yAxisConfig, dataZoomConfig } = setChartParams(subchartCount, mainData);
 
     const options = {
         animation: false,
@@ -217,11 +218,11 @@ function buildChart(mainData, strategiesData) {
                 backgroundColor: '#777'
             }
         },
-        legend: legendConfig[0], // Dynamically set legend configuration
-        grid: gridConfig, // Dynamically set grid configuration
-        xAxis: xAxisConfig, // Dynamically set xAxis configuration
-        yAxis: yAxisConfig, // Dynamically set yAxis configuration
-        dataZoom: dataZoomConfig, // Dynamically set dataZoom configuration
+        legend: legendConfig[0],
+        grid: gridConfig,
+        xAxis: xAxisConfig,
+        yAxis: yAxisConfig,
+        dataZoom: dataZoomConfig,
         series: [{
             name: 'Candlestick',
             type: 'candlestick',
@@ -296,69 +297,37 @@ function buildChart(mainData, strategiesData) {
         }]
     };
 
-    // Add Subcharts (RSI and Volume) if available
-    // Dynamically add strategies to the chart based on the selected subchart count
-    if (subchartCount >= 1 && strategiesData.rsi) {
-        options.series.push({
-            name: 'RSI',
-            type: 'line',
-            data: strategiesData.rsi,
-            smooth: false,
-            lineStyle: { width: 1 },
-            itemStyle: { color: '#ff00ff' },
-            showSymbol: false,
-            xAxisIndex: 1,  // Sync with the subchart x-axis
-            yAxisIndex: 1   // Sync with the subchart y-axis
-        });
-    }
+    // Add subchart series based on selected strategies
+    for (let i = 0; i < subchartCount; i++) {
+        const selectorId = `subchart${i + 1}`;
+        const selectedStrategy = $(`#${selectorId}`).val();
+        
+        if (selectedStrategy && strategiesData[selectedStrategy]) {
+            const strategyData = strategiesData[selectedStrategy];
+            if (strategyData.error) {
+                console.error(`Error with strategy ${selectedStrategy}:`, strategyData.error);
+                continue;
+            }
 
-    // Dynamically add strategies to the chart based on the selected subchart count
-    if (subchartCount >= 2 && strategiesData.lowest_vol_today) {
-        options.series.push({
-            name: 'Days Since Highest Volume',
-            type: 'line',
-            data: strategiesData.lowest_vol_today,
-            smooth: false,
-            lineStyle: { width: 1 },
-            itemStyle: { color: '#ff0000' },
-            showSymbol: false,
-            xAxisIndex: 2,  // Sync with the subchart x-axis
-            yAxisIndex: 2   // Sync with the subchart y-axis
-        });
-        console.log("Days Since Highest Volume data added to chart.");
-    }
-    // Dynamically add strategies to the chart based on the selected subchart count
-    if (subchartCount >= 3 && strategiesData.highest_vol_today) {
-        options.series.push({
-            name: 'Days Since Lowest Volume',
-            type: 'line',
-            data: strategiesData.highest_vol_today,
-            smooth: false,
-            lineStyle: { width: 1 },
-            itemStyle: { color: '#0000ff' },
-            showSymbol: false,
-            xAxisIndex: 3,  // Sync with the subchart x-axis
-            yAxisIndex: 3   // Sync with the subchart y-axis
-        });
-        console.log("Days Since Lowest Volume data added to chart.");
-    }
-    // Dynamically add strategies to the chart based on the selected subchart count
-    if (subchartCount >= 4 && strategiesData.volume) {
-        options.series.push({
-            name: 'Volume',
-            type: 'bar',
-            data: strategiesData.volume,
-            smooth: false,
-            lineStyle: { width: 1 },
-            itemStyle: { color: '#0f00ff' },
-            showSymbol: false,
-            xAxisIndex: 4,  // Sync with the subchart x-axis
-            yAxisIndex: 4   // Sync with the subchart y-axis
-        });
-        console.log("Volume data added to chart.");
-    }
+            const config = strategyData.config || {
+                type: 'line',
+                color: '#000000',
+                name: selectedStrategy
+            };
 
-
+            options.series.push({
+                name: config.name,
+                type: config.type,
+                data: strategyData.data,
+                smooth: false,
+                lineStyle: { width: 1 },
+                itemStyle: { color: config.color },
+                showSymbol: false,
+                xAxisIndex: i + 1,
+                yAxisIndex: i + 1
+            });
+        }
+    }
 
     // Set the final options
     chart.setOption(options);
@@ -372,5 +341,137 @@ function resetChart() {
 
 function updateSubcharts() {
     console.log("updateSubcharts() called.");
+    updateSubchartSelectors();
+    resetChart();
+}
+
+function updateChartForSubchart(selectorId) {
+    console.log(`Subchart selector ${selectorId} changed.`);
+    if (fetchedData) {
+        buildChart(fetchedData.main, fetchedData.strategies);
+    }
+}
+
+// Function to update subchart selectors based on subchartCount
+function updateSubchartSelectors() {
+    const subchartCount = parseInt($('#subchartCount').val());
+    const selectorsContainer = $('.subchart-selectors-container');
+    selectorsContainer.empty();
+
+    // Create wrapper for selectors
+    const selectorsWrapper = $('<div>', {
+        class: 'selectors-wrapper',
+        css: {
+            display: 'flex',
+            gap: '20px',
+            alignItems: 'center'
+        }
+    });
+
+    for (let i = 0; i < subchartCount; i++) {
+        const selectorContainer = $('<div>', {
+            css: {
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+            }
+        });
+
+        // Add label
+        const label = $('<label>', {
+            text: `Subchart ${i + 1}:`,
+            for: `subchart${i + 1}`,
+            css: {
+                color: 'white'
+            }
+        });
+
+        // Create selector
+        const selector = $('<select>', {
+            id: `subchart${i + 1}`,
+            class: 'subchart-selector',
+            css: {
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: 'white',
+                cursor: 'pointer',
+                minWidth: '200px'
+            }
+        });
+
+        // Style the options
+        selector.on('mousedown', function(e) {
+            $(this).data('select', true);
+        }).on('blur', function(e) {
+            $(this).data('select', false);
+        }).on('change', function() {
+            updateChartForSubchart(this.id);
+        });
+
+        // Add styles to option elements when they're added to the DOM
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    $(mutation.target).find('option').css({
+                        background: '#2c2c2c',
+                        color: 'white',
+                        padding: '8px'
+                    });
+                }
+            });
+        });
+
+        observer.observe(selector[0], { childList: true });
+
+        selectorContainer.append(label, selector);
+        selectorsWrapper.append(selectorContainer);
+    }
+
+    selectorsContainer.append(selectorsWrapper);
+    updateSubchartSelectorsOptions();
+}
+
+// Function to populate selector options when data is fetched
+function updateSubchartSelectorsOptions() {
+    if (!fetchedData || !fetchedData.strategies) return;
+
+    const strategies = Object.keys(fetchedData.strategies);
+    $('.subchart-selector').each(function(index) {
+        $(this).empty();
+        
+        // Add placeholder option
+        $('<option>', {
+            value: '',
+            text: 'Select strategy',
+            css: {
+                background: '#2c2c2c',
+                color: 'white',
+                padding: '8px'
+            }
+        }).appendTo(this);
+
+        // Add strategy options
+        strategies.forEach(strategy => {
+            const strategyConfig = fetchedData.strategies[strategy].config || { name: strategy };
+            $('<option>', {
+                value: strategy,
+                text: strategyConfig.name || strategy,
+                css: {
+                    background: '#2c2c2c',
+                    color: 'white',
+                    padding: '8px'
+                }
+            }).appendTo(this);
+        });
+
+        // Set default value to first strategy if available
+        if (strategies.length > 0) {
+            $(this).val(strategies[Math.min(index, strategies.length - 1)]);
+        }
+    });
+
+    // Update chart after populating options
     resetChart();
 }
