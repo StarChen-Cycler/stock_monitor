@@ -1,6 +1,6 @@
 import pandas as pd
-from BaseStrategy import BaseStrategy
-# from strategies.BaseStrategy import BaseStrategy
+# from BaseStrategy import BaseStrategy
+from strategies.BaseStrategy import BaseStrategy
 import os
 
 # Helper function to replace NaN values (can be reused in data_processor)

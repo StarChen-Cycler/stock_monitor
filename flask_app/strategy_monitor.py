@@ -491,7 +491,7 @@ def clear_all_strategy_data():
         logger.error(f"Error clearing strategy data: {str(e)}")
         return 0
 
-def run_monitor(interval_minutes=60, clear_existing=False):
+def run_monitor(interval_minutes=60, clear_existing=True):
     """
     Run the strategy monitor continuously with a specified interval.
     
@@ -509,7 +509,7 @@ def run_monitor(interval_minutes=60, clear_existing=False):
         print("\n" + "="*50)
         print(f"Starting new monitoring cycle at {datetime.now()}")
         print("="*50)
-        process_new_strategies()
+        # process_new_strategies()
         print(f"\nSleeping for {interval_minutes} minutes...")
         logger.info(f"Sleeping for {interval_minutes} minutes...")
         time.sleep(interval_minutes * 60)
