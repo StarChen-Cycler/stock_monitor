@@ -60,7 +60,10 @@
             </div>
         </div>
 
-        <div id="stockChart" class="chart-container"></div>
+        <div class="chart-container">
+            <div id="stockChart"></div>
+            <div class="resize-handle"></div>
+        </div>
     </div>
 
     <script>
@@ -112,10 +115,6 @@
         // Prevent clicks inside sidebar from closing it
         sidebar.addEventListener('click', function(event) {
             event.stopPropagation();
-        });
-
-        $(document).ready(function() {
-            searchStock();
         });
     </script>
 </body>

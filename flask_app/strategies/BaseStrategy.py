@@ -47,3 +47,15 @@ class BaseStrategy(ABC):
             dict: Dictionary mapping output names to their visualization configs.
         """
         return {}
+
+    @abstractmethod
+    def is_self_based(self):
+        """
+        Identify whether the strategy is self-based or cross-based.
+        Self-based: Only requires data from the individual stock.
+        Cross-based: Requires data from multiple stocks at the same timestamp.
+        
+        Returns:
+            bool: True if self-based, False if cross-based.
+        """
+        pass

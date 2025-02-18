@@ -5,20 +5,31 @@ let fetchedData = null;
 // Add cache management functions
 function saveToCache(tsCode, data) {
     try {
+        // Create a deep copy of the data
+        const cacheData = JSON.parse(JSON.stringify(data));
+        
+        // // Remove color configurations from strategies before caching
+        // if (cacheData.strategies) {
+        //     Object.keys(cacheData.strategies).forEach(strategyName => {
+        //         if (cacheData.strategies[strategyName].config) {
+        //             delete cacheData.strategies[strategyName].config;
+        //         }
+        //     });
+        // }
+
         const cache = JSON.parse(localStorage.getItem('stockDataCache') || '{}');
         cache[tsCode] = {
-            data: data,
+            data: cacheData,
             timestamp: Date.now()
         };
         localStorage.setItem('stockDataCache', JSON.stringify(cache));
     } catch (e) {
         console.error('Error saving to cache:', e);
-        // If localStorage is full, clear it and try again
         localStorage.clear();
         try {
             const cache = {};
             cache[tsCode] = {
-                data: data,
+                data: cacheData,
                 timestamp: Date.now()
             };
             localStorage.setItem('stockDataCache', JSON.stringify(cache));
@@ -44,7 +55,8 @@ function getFromCache(tsCode) {
             return null;
         }
 
-        return cachedData.data;
+        // Force a fresh fetch of strategy configurations
+        return null;  // Temporarily disable cache to force fresh data
     } catch (e) {
         console.error('Error reading from cache:', e);
         return null;
@@ -93,6 +105,48 @@ $(document).ready(function() {
     loadSettings();
     searchStock();
     
+    // Add resize observer for the chart container
+    const chartContainer = document.querySelector('.chart-container');
+    const resizeObserver = new ResizeObserver(entries => {
+        if (chart) {
+            chart.resize();
+        }
+    });
+    resizeObserver.observe(chartContainer);
+
+    // Add manual resize functionality
+    const resizeHandle = document.querySelector('.resize-handle');
+    let isResizing = false;
+    let startY;
+    let startHeight;
+
+    resizeHandle.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        startY = e.clientY;
+        startHeight = chartContainer.clientHeight;
+        chartContainer.classList.add('resizing');
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        
+        const delta = e.clientY - startY;
+        const newHeight = Math.max(300, Math.min(startHeight + delta, window.innerHeight - 100));
+        chartContainer.style.height = newHeight + 'px';
+        
+        if (chart) {
+            chart.resize();
+        }
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (isResizing) {
+            isResizing = false;
+            chartContainer.classList.remove('resizing');
+        }
+    });
+
+    // Handle window resize
     window.addEventListener('resize', function() {
         if (chart) {
             chart.resize();
@@ -104,18 +158,15 @@ $(document).ready(function() {
 });
 
 function searchStock() {
-    console.log("searchStock() called");
     var tsCode = $('#stockInput').val().trim();
     if (!tsCode) {
         alert('Please enter a valid stock code');
-        console.log("No stock code entered.");
         return;
     }
 
     // Try to get data from cache first
     const cachedData = getFromCache(tsCode);
     if (cachedData) {
-        console.log("Using cached data for", tsCode);
         fetchedData = cachedData;
         updateSubchartSelectors();
         buildChart(cachedData.main, cachedData.strategies);
@@ -129,10 +180,8 @@ function searchStock() {
         data: { ts_code: tsCode },
         dataType: 'json',
         success: function(data) {
-            console.log("Data received from server:", data);
             if (data.error) {
                 alert(data.error);
-                console.log("Error in data:", data.error);
                 return;
             }
             // Save to cache
@@ -144,7 +193,7 @@ function searchStock() {
         },
         error: function(xhr, status, error) {
             alert('Error retrieving stock data');
-            console.log("AJAX error:", error);
+            console.error("AJAX error:", error);
         }
     });
 }
@@ -267,36 +316,46 @@ function setChartParams(subchartCount, mainData) {
 }
 
 function buildChart(mainData, strategiesData) {
-    console.log("Building chart...");
-
     // Initialize the main chart
     if (chart) {
-        console.log("Disposing of existing chart before reinitializing.");
         chart.dispose();
     }
 
-    chart = echarts.init(document.getElementById('stockChart'));
-    console.log("Main chart initialized.");
+    const chartContainer = document.getElementById('stockChart');
+    chart = echarts.init(chartContainer);
 
     // Get chart configurations dynamically
     const subchartCount = parseInt($('#subchartCount').val());
-    console.log("Subchart count:", subchartCount);
 
     const { gridConfig, legendConfig, xAxisConfig, yAxisConfig, dataZoomConfig } = setChartParams(subchartCount, mainData);
+
+    // Force chart resize to fit container
+    chart.resize();
 
     const options = {
         animation: false,
         title: {
             text: 'Stock Candlestick Chart',
             top: '0%',
-            left: 'left'
+            left: 'left',
+            textStyle: {
+                color: '#ffffff'
+            }
         },
         tooltip: {
             trigger: 'axis',
             axisPointer: {
                 type: 'cross',
                 snap: true,
-                crossStyle: { color: '#ffffff' }
+                crossStyle: { color: '#ffffff' },
+                label: {
+                    color: '#000000'
+                }
+            },
+            backgroundColor: 'rgba(50, 50, 50, 0.9)',
+            borderColor: '#333',
+            textStyle: {
+                color: '#ffffff'
             },
             formatter: function (params) {
                 let tooltip = '';
@@ -318,14 +377,77 @@ function buildChart(mainData, strategiesData) {
                 { xAxisIndex: 'all' }
             ],
             label: {
-                backgroundColor: '#777'
+                backgroundColor: '#777',
+                color: '#ffffff'
             }
         },
-        legend: legendConfig[0],
+        legend: {
+            ...legendConfig[0],
+            textStyle: {
+                color: '#ffffff'
+            }
+        },
         grid: gridConfig,
-        xAxis: xAxisConfig,
-        yAxis: yAxisConfig,
-        dataZoom: dataZoomConfig,
+        xAxis: xAxisConfig.map(axis => ({
+            ...axis,
+            axisLabel: {
+                ...axis.axisLabel,
+                color: '#ffffff'
+            },
+            axisLine: {
+                ...axis.axisLine,
+                lineStyle: {
+                    color: '#ffffff'
+                }
+            },
+            splitLine: {
+                show: false
+            }
+        })),
+        yAxis: yAxisConfig.map(axis => ({
+            ...axis,
+            axisLabel: {
+                ...axis.axisLabel,
+                color: '#ffffff'
+            },
+            axisLine: {
+                ...axis.axisLine,
+                lineStyle: {
+                    color: '#ffffff'
+                }
+            },
+            splitLine: {
+                show: true,
+                lineStyle: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                }
+            },
+            splitArea: {
+                show: true,
+                areaStyle: {
+                    color: ['rgba(255, 255, 255, 0.02)', 'rgba(255, 255, 255, 0.01)']
+                }
+            }
+        })),
+        dataZoom: dataZoomConfig.map(zoom => ({
+            ...zoom,
+            textStyle: {
+                color: '#ffffff'
+            },
+            handleStyle: {
+                ...zoom.handleStyle,
+                color: '#ffffff'
+            },
+            borderColor: '#ffffff',
+            dataBackground: {
+                lineStyle: { color: '#ffffff' },
+                areaStyle: { color: 'rgba(255, 255, 255, 0.2)' }
+            },
+            selectedDataBackground: {
+                lineStyle: { color: '#ffffff' },
+                areaStyle: { color: 'rgba(255, 255, 255, 0.4)' }
+            }
+        })),
         series: [{
             name: 'Candlestick',
             type: 'candlestick',
@@ -339,34 +461,28 @@ function buildChart(mainData, strategiesData) {
         }]
     };
 
-    // Calculate MA Lines
-    const maSeries = [{
-        name: 'MA5',
-        type: 'line',
-        data: mainData.ma5,
-        smooth: true,
-        lineStyle: { width: 1 },
-        itemStyle: { color: '#ff4500' },
-        showSymbol: false
-    }, {
-        name: 'MA10',
-        type: 'line',
-        data: mainData.ma10,
-        smooth: true,
-        lineStyle: { width: 1 },
-        itemStyle: { color: '#06a7a0' },
-        showSymbol: false
-    }, {
-        name: 'MA20',
-        type: 'line',
-        data: mainData.ma20,
-        smooth: true,
-        lineStyle: { width: 1 },
-        itemStyle: { color: '#3c763d' },
-        showSymbol: false
-    }];
-
-    options.series.push(...maSeries);
+    // Add MA lines from strategy data if available
+    if (strategiesData.ma) {
+        const maData = strategiesData.ma.data;
+        const maConfig = strategiesData.ma.config.outputs;
+        
+        for (const [outputName, outputConfig] of Object.entries(maConfig)) {
+            options.series.push({
+                name: outputConfig.name,
+                type: 'line',
+                data: maData[outputName],
+                smooth: true,
+                lineStyle: { 
+                    width: 2,
+                    color: outputConfig.color
+                },
+                itemStyle: { 
+                    color: outputConfig.color
+                },
+                showSymbol: false
+            });
+        }
+    }
 
     // Add MarkPoints
     options.series[0].markPoint = {
@@ -404,52 +520,80 @@ function buildChart(mainData, strategiesData) {
     for (let i = 0; i < subchartCount; i++) {
         const selectorId = `subchart${i + 1}`;
         const selectedStrategy = $(`#${selectorId}`).val();
-        
-        if (selectedStrategy && strategiesData[selectedStrategy]) {
+        if (selectedStrategy && strategiesData[selectedStrategy] && selectedStrategy !== 'ma') {
             const strategyData = strategiesData[selectedStrategy];
-            if (strategyData.error) {
-                console.error(`Error with strategy ${selectedStrategy}:`, strategyData.error);
-                continue;
+            const outputs = strategyData.config.outputs;
+            
+            // Sort outputs by order if specified
+            const sortedOutputs = Object.entries(outputs).sort((a, b) => 
+                (a[1].order || 0) - (b[1].order || 0)
+            );
+
+            // Add each output as a series
+            for (const [outputName, outputConfig] of sortedOutputs) {
+                const isBarChart = outputConfig.type === 'bar';
+                const isHistogram = outputConfig.use_color_from === 'histogram';
+
+                // Create series configuration
+                let seriesConfig = {
+                    name: outputConfig.name,
+                    type: outputConfig.type,
+                    data: strategyData.data[outputName],
+                    smooth: false,
+                    showSymbol: false,
+                    xAxisIndex: i + 1,
+                    yAxisIndex: i + 1
+                };
+
+                // For bar charts, add color based on data type
+                if (isBarChart) {
+                    if (isHistogram) {
+                        // For MACD histogram, color based on value
+                        seriesConfig.itemStyle = {
+                            color: function(params) {
+                                return params.value >= 0 ? '#00da3c' : '#ec0000';
+                            }
+                        };
+                    } else {
+                        // For regular bars (like volume), color based on candlestick
+                        seriesConfig.itemStyle = {
+                            color: function(params) {
+                                const candleData = mainData.candle_data[params.dataIndex];
+                                return candleData[1] > candleData[0] ? '#00da3c' : '#ec0000';
+                            }
+                        };
+                    }
+                } else {
+                    // For non-bar charts, use the strategy's configured color
+                    seriesConfig.lineStyle = { 
+                        width: 3,
+                        color: outputConfig.color
+                    };
+                    seriesConfig.itemStyle = { 
+                        color: outputConfig.color,
+                        opacity: 0.8
+                    };
+                }
+
+                options.series.push(seriesConfig);
             }
-
-            const config = strategyData.config || {
-                type: 'line',
-                color: '#000000',
-                name: selectedStrategy
-            };
-
-            options.series.push({
-                name: config.name,
-                type: config.type,
-                data: strategyData.data,
-                smooth: false,
-                lineStyle: { width: 1 },
-                itemStyle: { color: config.color },
-                showSymbol: false,
-                xAxisIndex: i + 1,
-                yAxisIndex: i + 1
-            });
         }
     }
 
     // Set the final options
     chart.setOption(options);
-    console.log("Chart options applied.");
 }
 
 function resetChart() {
-    console.log("resetChart() called");
     buildChart(fetchedData.main, fetchedData.strategies);
 }
 
 function updateSubcharts() {
-    console.log("updateSubcharts() called.");
     updateSubchartSelectors();
     resetChart();
 }
 
 function updateChartForSubchart(selectorId) {
-    console.log(`Subchart selector ${selectorId} changed.`);
     if (fetchedData) {
         buildChart(fetchedData.main, fetchedData.strategies);
     }
